@@ -14,7 +14,7 @@ public class JSquirm3
 			grid.doTimeStep();
 			grid.draw();
 			try {
-				Thread.sleep(100);
+				Thread.sleep(10);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

@@ -15,6 +15,18 @@ public class SquirmChemistry
 		reactions.add(r);
 	}
 	
+	public void react(SquirmCell cell, ArrayList<SquirmCell> nearbyCells,
+                     double reactionRange2)
+	{
+		for (SquirmReaction r : reactions)
+		{
+			if (tryReaction(cell, nearbyCells, r, reactionRange2))
+			{
+				return;
+			}
+		}
+	}
+	
 	private boolean tryReaction(SquirmCell cell,
                                 ArrayList<SquirmCell> nearbyCells,
                                 SquirmReaction r, double reactionRange2)
@@ -106,9 +118,9 @@ public class SquirmChemistry
 						continue;
 					}
 					
-					C2DVector bloc = bCell.getLocation();
-					C2DVector cloc = cCell.getLocation();
-					C2DVector v = C2DVector.sub(bloc, cloc);
+					C2DVector bLoc = bCell.getLocation();
+					C2DVector cLoc = cCell.getLocation();
+					C2DVector v = C2DVector.sub(bLoc, cLoc);
 					if (!(C2DVector.getLength2(v) < reactionRange2))
 					{
 						continue;
@@ -146,6 +158,7 @@ public class SquirmChemistry
 					{
 						cell.bondTo(cCell);
 					}
+					return true;
 				}
 			}
 			else
@@ -161,26 +174,14 @@ public class SquirmChemistry
 				{
 					cell.debond(bCell);
 				}
-				else
+				else if (!cell.hasBondWith(bCell) && r.futABBond)
 				{
 					cell.bondTo(bCell);
 				}
+				return true;
 			}
 		}
 		return false;
-	}
-	
-	public int react(SquirmCell cell, ArrayList<SquirmCell> nearbyCells,
-                     double reactionRange2)
-	{
-		for (SquirmReaction r : reactions)
-		{
-			if (tryReaction(cell, nearbyCells, r, reactionRange2))
-			{
-				return reactions.indexOf(r);
-			}
-		}
-		return -1;
 	}
 	
 	private boolean testProb(long cases)

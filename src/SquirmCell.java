@@ -59,7 +59,14 @@ public class SquirmCell extends SquirmCellProperties
 			SquirmError.error("debond - not bonded to this cell");
 		}
 		
-		cell.debond(this);
+		if (cell.getBondedCells().contains(this))
+		{
+			cell.getBondedCells().remove(this);
+		}
+		else
+		{
+			SquirmError.error("debond - cell not bonded to us");
+		}
 	}
 	
 	public boolean hasBondWith(SquirmCell cell)

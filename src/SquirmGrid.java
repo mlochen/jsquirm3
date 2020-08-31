@@ -12,7 +12,7 @@ public class SquirmGrid
 	private int floodSector;
 	private double slotSize;
 	private int slotsX, slotsY;
-	private double lostSpeed, totalSpeed;
+	private double lostSpeed;
 		
 	public SquirmGrid(int width, int height)
 	{
@@ -21,7 +21,6 @@ public class SquirmGrid
 		floodSector = 2;
 		
 		lostSpeed = 0;
-		totalSpeed = 0;
 		
 		size = new C2DVector(width, height);
 		
@@ -107,11 +106,11 @@ public class SquirmGrid
 		
 		// start the enzyme production
 		new SquirmReaction('x', 35, true, 'y', 17, false, 'd', 0, false, 1, true, 38, true, E, false),
-		new SquirmReaction('d', E,true, 'a', 38, true, 'y', 17, false, E, false, 1, true, 38, true),
-		new SquirmReaction('d', E,true, 'b', 38, true, 'y', 17, false, E, false, 1, true, 38, true),
-		new SquirmReaction('d', E,true, 'c', 38, true, 'y', 17, false, E, false, 1, true, 38, true),
-		new SquirmReaction('d', E,true, 'd', 38, false, 'd', 0, false, E, false, 35, false, E, true),
-		new SquirmReaction('d', E,true, 'f', 38, 0, false, 1, false)};
+		new SquirmReaction('d', E, true, 'a', 38, true, 'y', 17, false, E, false, 1, true, 38, true),
+		new SquirmReaction('d', E, true, 'b', 38, true, 'y', 17, false, E, false, 1, true, 38, true),
+		new SquirmReaction('d', E, true, 'c', 38, true, 'y', 17, false, E, false, 1, true, 38, true),
+		new SquirmReaction('d', E, true, 'd', 38, false, 'd', 0, false, E, false, 35, false, E, true),
+		new SquirmReaction('d', E, true, 'f', 38, 0, false, 1, false)};
 
 		for (SquirmReaction r : reactions)
 		{
@@ -131,7 +130,7 @@ public class SquirmGrid
                 createNewCell(sx + 6 * SquirmCell.RADIUS * 2, sy, 'b', 1).bondTo(
                 createNewCell(sx + 7 * SquirmCell.RADIUS * 2, sy, 'd', 1).bondTo(
                 (fCell = createNewCell(sx + 8 * SquirmCell.RADIUS * 2, sy, 'f', 1)))))))));
-                                                                        		
+		
 		int length = 2;
 		int width = 8;
 		double startX = sx;
@@ -187,34 +186,41 @@ public class SquirmGrid
 		iterations++;
 	}
 	
-	public void getAllWithinRadius(C2DVector loc, double r, ArrayList<SquirmCell> dest)
+	public ArrayList<SquirmCell> getAllWithinRadius(C2DVector loc, double r)
 	{
-		dest.clear();
 		int cx = (int)Math.floor(loc.getX() / slotSize);
 		int cy = (int)Math.floor(loc.getY() / slotSize);
 		double r2 = r * r;
 		
+		ArrayList<SquirmCell> cells = new ArrayList<SquirmCell>();
+		
 		if (cx >= 0 && cy >= 0 && cx < slotsX && cy < slotsY)
 		{
 			int searchSlots = (int)Math.ceil(r / slotSize);
-			for (int x = Math.max(0, cx - searchSlots); x <= Math.min(slotsX - 1, cx + searchSlots); x++)
+			int xStart = Math.max(0, cx - searchSlots);
+			int xEnd = Math.min(slotsX - 1, cx + searchSlots);
+			int yStart = Math.max(0, cy - searchSlots);
+			int yEnd = Math.min(slotsY - 1, cy + searchSlots);
+			for (int x = xStart; x <= xEnd; x++)
 			{
-				for (int y = Math.max(0, cy - searchSlots); y <= Math.min(slotsY - 1, cy + searchSlots); y++)
+				for (int y = yStart; y <= yEnd; y++)
 				{
 					SquirmCellSlot slot = cellGrid[x][y];
 					if (!slot.isEmpty())
 					{
 						for (SquirmCell cell : slot.getOccupants())
 						{
-							if (C2DVector.getDist2(cell.getLocation(), loc) < r2)
+							C2DVector otherLoc = cell.getLocation();
+							if (C2DVector.getDist2(otherLoc, loc) < r2)
 							{
-								dest.add(cell);
+								cells.add(cell);
 							}
 						}
 					}
 				}
 			}
 		}
+		return cells;
 	}
 	
 	public boolean checkLocation(C2DVector v)
@@ -229,9 +235,9 @@ public class SquirmGrid
 		int cx = (int)Math.floor(cell.getLocation().getX() / slotSize);
 		int cy = (int)Math.floor(cell.getLocation().getY() / slotSize);
 		cx = Math.max(0, cx);
-		cx = Math.min(cx, slotsX);
+		cx = Math.min(cx, slotsX - 1);
 		cy = Math.max(0, cy);
-		cy = Math.min(cy, slotsX);
+		cy = Math.min(cy, slotsX - 1);
 		cellGrid[cx][cy].addOccupant(cell);
 	}
 	
@@ -240,9 +246,9 @@ public class SquirmGrid
 		int cx = (int)Math.floor(cell.getLocation().getX() / slotSize);
 		int cy = (int)Math.floor(cell.getLocation().getY() / slotSize);
 		cx = Math.max(0, cx);
-		cx = Math.min(cx, slotsX);
+		cx = Math.min(cx, slotsX - 1);
 		cy = Math.max(0, cy);
-		cy = Math.min(cy, slotsX);
+		cy = Math.min(cy, slotsX - 1);
 		cellGrid[cx][cy].removeOccupant(cell);
 	}
 	
@@ -300,35 +306,39 @@ public class SquirmGrid
 	
 	private void recomputeVelocitiesAndReact()
 	{
-		totalSpeed = 0;
-		
+		// how far out do the physical forces extend?
 		final double PHYS_RANGE = SquirmCell.RADIUS * 2;
 		final double PHYS_RANGE2 = PHYS_RANGE * PHYS_RANGE;
+		// how far out can reactions extend?
 		final double REACTION_RANGE = SquirmCell.RADIUS * 2.5;
 		final double REACTION_RANGE2 = REACTION_RANGE * REACTION_RANGE;
+		// no effect acts beyond this distance
 		final double MAX_RANGE = Math.max(PHYS_RANGE2, REACTION_RANGE2);
 		
+		// find the search radius distance in terms of the number of slots
 		int searchSlots = (int)Math.ceil(MAX_RANGE / slotSize);
 		
-		int cx, cy;
-		ArrayList<SquirmCell> centralCells = new ArrayList<SquirmCell>();
-		ArrayList<SquirmCell> nearbyCells = new ArrayList<SquirmCell>();
-		ArrayList<SquirmCell> reactionCandidates = new ArrayList<SquirmCell>();
-		
+		// for each slot in the grid, get the list of cells within the
+		// neighborhood. Use this list to recompute the velocities of the
+
 		C2DVector to;
 		double toLen2;
 		double wallRange;
 		
 		final double XY_DIST = 2 * Math.sqrt(MAX_RANGE * MAX_RANGE / 2);
 		
-		for (cx = 0; cx < slotsX; cx++)
+		for (int cx = 0; cx < slotsX; cx++)
 		{
-			for (cy = 0; cy < slotsY; cy++)
+			for (int cy = 0; cy < slotsY; cy++)
 			{
-				initSearchArea(cx, cy, searchSlots, centralCells, nearbyCells);
+				// the cells in the central square
+				ArrayList<SquirmCell> centralCells = cellGrid[cx][cy].getOccupants();
+				ArrayList<SquirmCell> nearbyCells = initSearchArea(cx, cy, searchSlots);
 				
 				for (SquirmCell cell : centralCells)
 				{
+					// the cells in the search area (including central_cells)
+					ArrayList<SquirmCell> reactionCandidates = new ArrayList<SquirmCell>();
 					C2DVector force = new C2DVector(0, 0);
 					
 					if (cell.getBondedCells().isEmpty())
@@ -355,8 +365,7 @@ public class SquirmGrid
 							
 							if (toLen2 < REACTION_RANGE2)
 							{
-								ArrayList<SquirmCell> tooClose = new ArrayList<SquirmCell>();
-								getAllWithinRadius(other.getLocation(), SquirmCell.RADIUS * 1.5, tooClose);
+								ArrayList<SquirmCell> tooClose = getAllWithinRadius(other.getLocation(), SquirmCell.RADIUS * 1.5);
 								if (tooClose.size() <= 1)
 								{
 									reactionCandidates.add(other);
@@ -431,11 +440,8 @@ public class SquirmGrid
 					{
 						cell.setVelocity(C2DVector.mul(cell.getVelocity(), (speed + 1) / speed));
 						lostSpeed -= 1;
-						//TODO: comment in original code states that something is wrong here
 					}
-					
-					totalSpeed += C2DVector.getLength(cell.getVelocity());
-					
+										
 					reactionCandidates.add(cell);
 					chemistry.react(cell, reactionCandidates, REACTION_RANGE2);
 				}
@@ -495,10 +501,12 @@ public class SquirmGrid
 		double top[] = {0, 0, size.getY() / 2, size.getY() / 2};
 		for (SquirmCell cell : cells)
 		{
-			if (cell.getLocation().getX() >= left[floodSector]
-                && cell.getLocation().getX() <= left[floodSector] + size.getX() / 2
-                && cell.getLocation().getY() >= top[floodSector]
-                && cell.getLocation().getY() < top[floodSector] + size.getY() / 2)
+			double cellX = cell.getLocation().getX();
+			double cellY = cell.getLocation().getY();
+			if (cellX >= left[floodSector]
+                && cellX <= left[floodSector] + size.getX() / 2
+                && cellY >= top[floodSector]
+                && cellY < top[floodSector] + size.getY() / 2)
 			{
 				cell.breakAllBonds();
 				cell.setState(0);
@@ -508,16 +516,17 @@ public class SquirmGrid
 		floodSector = (floodSector + 1) % 4;
 	}
 	
-	private void initSearchArea(int cx, int cy, int searchSlots,
-                                ArrayList<SquirmCell> centralCells,
-                                ArrayList<SquirmCell> nearbyCells)
+	private ArrayList<SquirmCell> initSearchArea(int cx, int cy,
+                                             int searchSlots)
 	{
-		centralCells = cellGrid[cx][cy].getOccupants();
-		nearbyCells.clear();
-		
-		for (int i = Math.max(0, cx - searchSlots); i <= Math.min(slotsX - 1, cx + searchSlots); i++)
+		ArrayList<SquirmCell> nearbyCells = new ArrayList<SquirmCell>();
+		int iStart = Math.max(0, cx - searchSlots);
+		int iEnd = Math.min(slotsX - 1, cx + searchSlots);
+		int jStart = Math.max(0, cy - searchSlots);
+		int jEnd = Math.min(slotsY - 1, cy + searchSlots);
+		for (int i = iStart; i <= iEnd; i++)
 		{
-			for (int j = Math.max(0, cy - searchSlots); j <= Math.min(slotsY - 1, cy + searchSlots); j++)
+			for (int j = jStart; j <= jEnd; j++)
 			{
 				for (SquirmCell cell : cellGrid[i][j].getOccupants())
 				{
@@ -525,5 +534,6 @@ public class SquirmGrid
 				}
 			}
 		}
+		return nearbyCells;
 	}
 }

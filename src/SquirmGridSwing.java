@@ -54,7 +54,16 @@ class SquirmPanel extends JPanel
         
         for (SquirmCell cell : cells)
         {
-        	g2d.setColor(getColor(cell.getType()));
+        	if (cell.getState() == 0)
+        	{
+        		Color c = getColor(cell.getType());
+        		Color ca = new Color(c.getRed(), c.getGreen(), c.getBlue(), 25);
+        		g2d.setColor(ca);
+        	}
+        	else
+        	{
+        		g2d.setColor(getColor(cell.getType()));
+        	}
         	
         	//double s = scale * SquirmCell.RADIUS * 0.8;
         	

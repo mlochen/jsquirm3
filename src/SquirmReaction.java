@@ -90,23 +90,4 @@ public class SquirmReaction
              futBState,
              aeoa, 1);
 	}
-	
-	@Override
-	public String toString()
-	{
-		if (nInputs == 2)
-		{
-			return String.valueOf(aType) + aState
-                   + (curABBond ? "-" : " + ")
-                   + String.valueOf(bType) + bState
-                   + " -> "
-                   + String.valueOf(aType) + futAState
-                   + (futABBond ? "-" : " + ")
-                   + String.valueOf(bType) + futBState;
-		}
-		else
-		{
-			return "not yet implemented";
-		}
-	}
 }
